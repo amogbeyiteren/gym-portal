@@ -1,0 +1,119 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+
+enum MembershipStatus {
+  ACTIVE
+  INACTIVE
+  EXPIRED
+}
+
+enum PurchaseStatus {
+  PENDING
+  COMPLETED
+  CANCELLED
+  REFUNDED
+}
+
+enum DeliveryOption {
+  PICKUP
+  DELIVERY
+}
+
+model Admin {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  firstName String
+  lastName  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("admins")
+}
+
+model Client {
+  id                   String           @id @default(cuid())
+  email                String           @unique
+  password             String
+  firstName            String
+  lastName             String
+  profileImage         String?
+  qrCodeUrl            String?
+  membershipStatus     MembershipStatus @default(INACTIVE)
+  membershipPaidDate   DateTime?
+  membershipDueDate    DateTime?
+  membershipPaymentRef String?          @unique
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+
+  // Relations
+  purchases Purchase[]
+
+  @@map("clients")
+}
+
+model StoreItem {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  price       Decimal  @db.Decimal(10, 2)
+  imageUrl    String?
+  quantity    Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  purchaseItems PurchaseItem[]
+
+  @@map("store_items")
+}
+
+model Purchase {
+  id               String         @id @default(cuid())
+  clientId         String
+  totalAmount      Decimal        @db.Decimal(10, 2)
+  status           PurchaseStatus @default(PENDING)
+  deliveryOption   DeliveryOption
+  deliveryAddress  String?
+  paymentReference String?        @unique
+  paymentVerified  Boolean        @default(false)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  // Relations
+  client        Client         @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  purchaseItems PurchaseItem[]
+
+  @@map("purchases")
+}
+
+model PurchaseItem {
+  id         String  @id @default(cuid())
+  purchaseId String
+  storeItemId String
+  quantity   Int
+  unitPrice  Decimal @db.Decimal(10, 2)
+  totalPrice Decimal @db.Decimal(10, 2)
+
+  // Relations
+  purchase  Purchase  @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+  storeItem StoreItem @relation(fields: [storeItemId], references: [id])
+
+  @@map("purchase_items")
+}
