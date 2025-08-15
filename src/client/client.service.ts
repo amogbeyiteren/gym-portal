@@ -14,7 +14,7 @@ import {
   UpdateClientMembershipAsActiveDto,
 } from './dto/update-client.dto';
 import { LoginClientDto } from './dto/login-client.dto';
-import { MembershipStatus } from 'generated/prisma';
+import { MembershipStatus } from '@prisma/client';
 
 @Injectable()
 export class ClientService {
