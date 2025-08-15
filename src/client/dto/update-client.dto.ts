@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsString, IsOptional, IsUrl } from 'class-validator';
+import { MembershipStatus } from 'generated/prisma';
 
 export class UpdateClientDto {
   @ApiProperty({ required: false })
@@ -18,4 +19,19 @@ export class UpdateClientDto {
   profileImage?: string;
 
 
+}
+
+export class UpdateClientMembershipAsActiveDto {
+
+  @ApiProperty({ required: true, description: 'Date membership was purchased' })
+  @IsString()
+  membershipPaidDate: string;
+
+  @ApiProperty({ required: true, description: 'Date membership is due to be renewed' })
+  @IsString()
+  membershipDueDate: string;
+
+  @ApiProperty({ required: true, description: 'Amount paid for membership' })
+  @IsString()
+  amount: number;
 }

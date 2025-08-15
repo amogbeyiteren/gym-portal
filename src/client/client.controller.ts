@@ -25,7 +25,10 @@ import {
 import { ThrottlerGuard } from '@nestjs/throttler';
 import { ClientService } from './client.service';
 import { CreateClientDto } from './dto/create-client.dto';
-import { UpdateClientDto } from './dto/update-client.dto';
+import {
+  UpdateClientDto,
+  UpdateClientMembershipAsActiveDto,
+} from './dto/update-client.dto';
 import { LoginClientDto } from './dto/login-client.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AdminGuard } from '../auth/guards/admin.guard';
@@ -40,28 +43,33 @@ export class ClientController {
   constructor(private readonly clientService: ClientService) {}
 
   @Post('signup')
-
   @HttpCode(HttpStatus.CREATED)
   @UseInterceptors(FileInterceptor('profileImage'))
   @ApiConsumes('multipart/form-data')
   @ApiOperation({ summary: 'Register a new client' })
-  @ApiBody({  
+  @ApiBody({
     description: 'Signup',
-    schema:{
+    schema: {
       type: 'object',
       properties: {
         email: { type: 'string' },
         password: { type: 'string' },
         firstName: { type: 'string' },
         lastName: { type: 'string' },
-        profileImage: { type: 'string', format: 'binary', description: 'Profile image' },
+        profileImage: {
+          type: 'string',
+          format: 'binary',
+          description: 'Profile image',
+        },
       },
     },
   })
   @ApiResponse({ status: 201, description: 'Client registered successfully' })
   @ApiResponse({ status: 409, description: 'Email already registered' })
-  signup(@Body() createClientDto: CreateClientDto, @UploadedFile() profileImage: Express.Multer.File) {
-    
+  signup(
+    @Body() createClientDto: CreateClientDto,
+    @UploadedFile() profileImage: Express.Multer.File,
+  ) {
     return this.clientService.signup(createClientDto, profileImage);
   }
 
@@ -94,19 +102,54 @@ export class ClientController {
     return this.clientService.findAll();
   }
 
-  @Get(':id')
-  @UseGuards(JwtAuthGuard)
+  @Patch('active/:id')
+  @ApiParam({ name: 'id', description: 'Client ID' })
+  @UseGuards(JwtAuthGuard, AdminGuard)
   @ApiBearerAuth()
+  @ApiOperation({ summary: "Update a client's membership status" })
+  @ApiResponse({
+    status: 200,
+    description: 'Client membership status updated successfully',
+  })
+  @ApiResponse({ status: 403, description: 'Admin access required' })
+  @ApiResponse({ status: 404, description: 'Client not found' })
+  updateClientMembershipAsActive(
+    @Param('id') id: string,
+    @Body()
+    updateClientMembershipAsActiveDto: UpdateClientMembershipAsActiveDto,
+  ) {
+    return this.clientService.updateClientMembershipAsActive(
+      id,
+      updateClientMembershipAsActiveDto,
+    );
+  }
+
+  @Patch('inactive/:id')
+  @ApiParam({ name: 'id', description: 'Client ID' })
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "Update a client's membership status" })
+  @ApiResponse({
+    status: 200,
+    description: 'Client membership status updated successfully',
+  })
+  @ApiResponse({ status: 403, description: 'Admin access required' })
+  @ApiResponse({ status: 404, description: 'Client not found' })
+  updateClientMembershipAsInactive(
+    @Param('id') id: string
+  ) {
+    return this.clientService.updateClientMembershipAsInactive(
+      id
+    );
+  }
+
+  @Get(':id')
   @ApiParam({ name: 'id', description: 'Client ID' })
   @ApiOperation({ summary: 'Get client by ID' })
   @ApiResponse({ status: 200, description: 'Client retrieved successfully' })
   @ApiResponse({ status: 404, description: 'Client not found' })
   findOne(@Param('id') id: string, @Request() req) {
-    // Allow admins to view any client, clients can only view themselves
-    if (req.user.userType === 'admin' || req.user.id === id) {
-      return this.clientService.findOne(id);
-    }
-    return this.clientService.findMe(req.user.id);
+    return this.clientService.findOne(id);
   }
 
   @Patch(':id')
@@ -126,7 +169,11 @@ export class ClientController {
       properties: {
         firstName: { type: 'string' },
         lastName: { type: 'string' },
-        profileImage: { type: 'string', format: 'binary', description: 'Profile image' },
+        profileImage: {
+          type: 'string',
+          format: 'binary',
+          description: 'Profile image',
+        },
       },
     },
   })

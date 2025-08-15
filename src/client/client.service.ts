@@ -1,11 +1,20 @@
-import { Injectable, ConflictException, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 const QRCode = require('qrcode');
 import { DatabaseService } from '../database/database.service';
 import { AuthService } from '../auth/auth.service';
 import { FileUploadService } from '../file-upload/file-upload.service';
 import { CreateClientDto } from './dto/create-client.dto';
-import { UpdateClientDto } from './dto/update-client.dto';
+import {
+  UpdateClientDto,
+  UpdateClientMembershipAsActiveDto,
+} from './dto/update-client.dto';
 import { LoginClientDto } from './dto/login-client.dto';
+import { MembershipStatus } from 'generated/prisma';
 
 @Injectable()
 export class ClientService {
@@ -15,7 +24,10 @@ export class ClientService {
     private readonly fileUploadService: FileUploadService,
   ) {}
 
-  async signup(createClientDto: CreateClientDto, profileImage: Express.Multer.File) {
+  async signup(
+    createClientDto: CreateClientDto,
+    profileImage: Express.Multer.File,
+  ) {
     // Check if email already exists
     const existingClient = await this.databaseService.client.findUnique({
       where: { email: createClientDto.email },
@@ -28,11 +40,17 @@ export class ClientService {
     let profileImageUrl = null;
 
     if (profileImage) {
-      profileImageUrl = await this.fileUploadService.uploadFile(profileImage.buffer, profileImage.originalname, profileImage.mimetype);
+      profileImageUrl = await this.fileUploadService.uploadFile(
+        profileImage.buffer,
+        profileImage.originalname,
+        profileImage.mimetype,
+      );
     }
 
     // Hash password
-    const hashedPassword = await this.authService.hashPassword(createClientDto.password);
+    const hashedPassword = await this.authService.hashPassword(
+      createClientDto.password,
+    );
 
     // Create client
     const client = await this.databaseService.client.create({
@@ -69,11 +87,82 @@ export class ClientService {
   }
 
   async login(loginClientDto: LoginClientDto) {
-    return await this.authService.loginClient(loginClientDto.email, loginClientDto.password);
+    return await this.authService.loginClient(
+      loginClientDto.email,
+      loginClientDto.password,
+    );
   }
 
-  async findAll() {
+  async findAll(page: number = 1, limit: number = 10) {
+    // Ensure page and limit are at least 1
+    const currentPage = Math.max(page, 1);
+    const pageSize = Math.max(limit, 1);
+
+    // Count total clients for pagination metadata
+    const totalClients = await this.databaseService.client.count();
+
+    // Fetch paginated data
     const clients = await this.databaseService.client.findMany({
+      skip: (currentPage - 1) * pageSize,
+      take: pageSize,
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        profileImage: true,
+        qrCodeUrl: true,
+        membershipStatus: true,
+        membershipPaidDate: true,
+        membershipDueDate: true,
+        membershipLastPaidAmount: true,
+        createdAt: true,
+        updatedAt: true,
+        _count: {
+          select: {
+            purchases: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc', // optional, keeps results ordered
+      },
+    });
+
+    return {
+      data: clients,
+      pagination: {
+        total: totalClients,
+        page: currentPage,
+        limit: pageSize,
+        totalPages: Math.ceil(totalClients / pageSize),
+      },
+    };
+  }
+
+  async updateClientMembershipAsActive(
+    clientId: string,
+    updateClientMembershipAsActive: UpdateClientMembershipAsActiveDto,
+  ) {
+    const { membershipDueDate, membershipPaidDate, amount } =
+      updateClientMembershipAsActive;
+
+    const existingClient = await this.databaseService.client.findUnique({
+      where: { id: clientId },
+    });
+
+    if (!existingClient) {
+      throw new NotFoundException('Client not found');
+    }
+
+    const updatedClient = await this.databaseService.client.update({
+      where: { id: clientId },
+      data: {
+        membershipStatus: MembershipStatus.ACTIVE,
+        membershipDueDate,
+        membershipPaidDate,
+        membershipLastPaidAmount: amount,
+      },
       select: {
         id: true,
         email: true,
@@ -86,15 +175,42 @@ export class ClientService {
         membershipDueDate: true,
         createdAt: true,
         updatedAt: true,
-        _count: {
-          select: {
-            purchases: true,
-          },
-        },
       },
     });
 
-    return clients;
+    return updatedClient;
+  }
+
+  async updateClientMembershipAsInactive(clientId: string) {
+    const existingClient = await this.databaseService.client.findUnique({
+      where: { id: clientId },
+    });
+
+    if (!existingClient) {
+      throw new NotFoundException('Client not found');
+    }
+
+    const updatedClient = await this.databaseService.client.update({
+      where: { id: clientId },
+      data: {
+        membershipStatus: MembershipStatus.ACTIVE,
+      },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        profileImage: true,
+        qrCodeUrl: true,
+        membershipStatus: true,
+        membershipPaidDate: true,
+        membershipDueDate: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    return updatedClient;
   }
 
   async findOne(id: string) {
@@ -135,7 +251,13 @@ export class ClientService {
     return await this.findOne(userId);
   }
 
-  async update(id: string, updateClientDto: UpdateClientDto, currentUserId: string, userType: string, profileImage: Express.Multer.File) {
+  async update(
+    id: string,
+    updateClientDto: UpdateClientDto,
+    currentUserId: string,
+    userType: string,
+    profileImage: Express.Multer.File,
+  ) {
     // Check if the client exists
     const existingClient = await this.databaseService.client.findUnique({
       where: { id },
@@ -153,7 +275,11 @@ export class ClientService {
     let profileImageUrl = null;
 
     if (profileImage) {
-      profileImageUrl = await this.fileUploadService.uploadFile(profileImage.buffer, profileImage.originalname, profileImage.mimetype);
+      profileImageUrl = await this.fileUploadService.uploadFile(
+        profileImage.buffer,
+        profileImage.originalname,
+        profileImage.mimetype,
+      );
     }
 
     const updatedClient = await this.databaseService.client.update({
@@ -196,7 +322,11 @@ export class ClientService {
     return { message: 'Client deleted successfully' };
   }
 
-  async getClientPurchases(clientId: string, currentUserId: string, userType: string) {
+  async getClientPurchases(
+    clientId: string,
+    currentUserId: string,
+    userType: string,
+  ) {
     // Only allow clients to view their own purchases (unless admin)
     if (userType !== 'admin' && currentUserId !== clientId) {
       throw new ForbiddenException('You can only view your own purchases');
@@ -223,7 +353,7 @@ export class ClientService {
     try {
       const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
       const qrData = `${frontendUrl}/client-detail/${clientId}`;
-      
+
       // Generate QR code as buffer
       const qrCodeBuffer = await QRCode.toBuffer(qrData, {
         errorCorrectionLevel: 'M',
@@ -236,7 +366,11 @@ export class ClientService {
 
       // Upload to Supabase Storage
       const fileName = `qr-codes/client-${clientId}-${Date.now()}.png`;
-      const qrCodeUrl = await this.fileUploadService.uploadFile(qrCodeBuffer, fileName, 'image/png');
+      const qrCodeUrl = await this.fileUploadService.uploadFile(
+        qrCodeBuffer,
+        fileName,
+        'image/png',
+      );
 
       return qrCodeUrl;
     } catch (error) {
