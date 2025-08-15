@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsString, IsOptional, IsUrl } from 'class-validator';
-import { MembershipStatus } from '@prisma/client';';
+
 
 export class UpdateClientDto {
   @ApiProperty({ required: false })
