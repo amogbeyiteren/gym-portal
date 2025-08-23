@@ -23,6 +23,14 @@ export class AuthService {
     return this.jwtService.sign(payload);
   }
 
+  async generateForgotPasswordToken(payload: { sub: string; email: string; type: 'client' | 'admin'; purpose: 'reset-password' }): Promise<string> {
+    return this.jwtService.sign(payload, { expiresIn: '1h' });
+  }
+
+  async verifyToken(token: string) {
+    return this.jwtService.verify(token, { secret: process.env.JWT_SECRET });
+  }
+
   async validateClient(email: string, password: string) {
     const client = await this.databaseService.client.findUnique({
       where: { email },
@@ -39,7 +47,7 @@ export class AuthService {
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password: _, ...result } = client;
-    return result;
+    return { ...result, type: 'client' };
   }
 
   async validateAdmin(email: string, password: string) {
@@ -58,7 +66,7 @@ export class AuthService {
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password: _, ...result } = admin;
-    return result;
+    return { ...result, type: 'admin' };
   }
 
   async loginClient(email: string, password: string) {

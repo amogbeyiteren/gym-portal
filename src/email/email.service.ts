@@ -206,4 +206,33 @@ export class EmailService {
       throw error;
     }
   }
+
+  async sendForgotPasswordEmail(email: string, token: string) {
+    const emailContent = `
+      Password Reset Request
+
+      Dear ${email},
+
+      You requested a password reset. Please click the link below to reset your password:
+
+      ${process.env.FRONTEND_URL}/reset-password?token=${token}
+
+      If you did not request a password reset, please ignore this email.
+    `;
+
+    try {
+      const data = await this.resend.emails.send({
+        from: process.env.RESEND_FROM_EMAIL,
+        to: email,
+        subject: 'Password Reset Request',
+        text: emailContent,
+      });
+
+      console.log('Forgot password email sent:', data.data.id);
+      return data;
+    } catch (error) {
+      console.error('Error sending forgot password email:', error);
+      throw error;
+    }
+  }
 }

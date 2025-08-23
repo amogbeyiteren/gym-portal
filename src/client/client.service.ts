@@ -3,6 +3,7 @@ import {
   ConflictException,
   NotFoundException,
   ForbiddenException,
+  UnauthorizedException,
 } from '@nestjs/common';
 const QRCode = require('qrcode');
 import { DatabaseService } from '../database/database.service';
@@ -15,6 +16,7 @@ import {
 } from './dto/update-client.dto';
 import { LoginClientDto } from './dto/login-client.dto';
 import { MembershipStatus } from '@prisma/client';
+import { EmailService } from 'src/email/email.service';
 
 @Injectable()
 export class ClientService {
@@ -22,6 +24,7 @@ export class ClientService {
     private readonly databaseService: DatabaseService,
     private readonly authService: AuthService,
     private readonly fileUploadService: FileUploadService,
+    private readonly emailService: EmailService,
   ) {}
 
   async signup(
@@ -347,6 +350,57 @@ export class ClientService {
     });
 
     return purchases;
+  }
+
+  async forgotPassword(email: string) {
+    const client = await this.databaseService.client.findUnique({
+      where: { email },
+    });
+
+    if (!client) {
+      throw new NotFoundException('Client not found');
+    }
+
+    const token = await this.authService.generateForgotPasswordToken({
+      sub: client.id,
+      email: client.email,
+      type: 'client',
+      purpose: 'reset-password',
+    });
+
+    this.emailService.sendForgotPasswordEmail(client.email, token);
+
+    return { message: 'Password reset email sent' };
+  }
+
+  async resetPassword(token: string, password: string) {
+    const decoded = await this.authService.verifyToken(token);
+
+    if (!decoded) {
+      throw new UnauthorizedException('Invalid token');
+    }
+
+    if (decoded.purpose !== 'reset-password') {
+      throw new UnauthorizedException('Invalid token');
+    }
+
+    const hashedPassword = await this.authService.hashPassword(password);
+
+    const updatedClient = await this.databaseService.client.update({
+      where: { id: decoded.sub },
+      data: { password: hashedPassword },
+    });
+
+    const newToken = await this.authService.generateToken({
+      sub: updatedClient.id,
+      email: updatedClient.email,
+      type: 'client',
+    });
+
+    return {
+      access_token: newToken,
+      client: updatedClient,
+    };
   }
 
   private async generateQRCode(clientId: string): Promise<string> {

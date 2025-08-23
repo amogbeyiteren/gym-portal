@@ -12,6 +12,7 @@ import {
   HttpStatus,
   UseInterceptors,
   UploadedFile,
+  Query,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -21,6 +22,7 @@ import {
   ApiParam,
   ApiConsumes,
   ApiBody,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import { ClientService } from './client.service';
@@ -95,11 +97,13 @@ export class ClientController {
   @Get()
   @UseGuards(JwtAuthGuard, AdminGuard)
   @ApiBearerAuth()
+  @ApiQuery({ name: 'page', type: Number, required: false })
+  @ApiQuery({ name: 'limit', type: Number, required: false })
   @ApiOperation({ summary: 'Get all clients (Admin only)' })
   @ApiResponse({ status: 200, description: 'Clients retrieved successfully' })
   @ApiResponse({ status: 403, description: 'Admin access required' })
-  findAll() {
-    return this.clientService.findAll();
+  findAll(@Query('page') page: number = 1, @Query('limit') limit: number = 10) {
+    return this.clientService.findAll(page, limit);
   }
 
   @Patch('active/:id')
@@ -217,5 +221,21 @@ export class ClientController {
       req.user.id,
       req.user.userType,
     );
+  }
+
+  @Post('forgot-password')
+  @ApiOperation({ summary: 'Send forgot password email' })
+  @ApiResponse({ status: 200, description: 'Forgot password email sent' })
+  @ApiResponse({ status: 404, description: 'Client not found' })
+  forgotPassword(@Body() email: string) {
+    return this.clientService.forgotPassword(email);
+  }
+
+  @Post('reset-password')
+  @ApiOperation({ summary: 'Reset password' })
+  @ApiResponse({ status: 200, description: 'Password reset successfully' })
+  @ApiResponse({ status: 404, description: 'Client not found' })
+  resetPassword(@Body() token: string, @Body() password: string) {
+    return this.clientService.resetPassword(token, password);
   }
 }
