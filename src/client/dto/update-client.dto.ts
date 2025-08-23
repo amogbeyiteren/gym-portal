@@ -32,6 +32,5 @@ export class UpdateClientMembershipAsActiveDto {
   membershipDueDate: string;
 
   @ApiProperty({ required: true, description: 'Amount paid for membership' })
-  @IsString()
   amount: number;
 }
