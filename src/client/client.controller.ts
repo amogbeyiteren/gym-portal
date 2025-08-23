@@ -37,6 +37,7 @@ import { AdminGuard } from '../auth/guards/admin.guard';
 import { ClientGuard } from '../auth/guards/client.guard';
 import { FormDataRequest } from 'nestjs-form-data';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { MembershipStatus } from '@prisma/client';
 
 @ApiTags('Clients')
 @UseGuards(ThrottlerGuard)
@@ -99,11 +100,13 @@ export class ClientController {
   @ApiBearerAuth()
   @ApiQuery({ name: 'page', type: Number, required: false })
   @ApiQuery({ name: 'limit', type: Number, required: false })
+  @ApiQuery({ name: 'search', type: String, required: false })
+  @ApiQuery({ name: 'status', type: String, required: false })
   @ApiOperation({ summary: 'Get all clients (Admin only)' })
   @ApiResponse({ status: 200, description: 'Clients retrieved successfully' })
   @ApiResponse({ status: 403, description: 'Admin access required' })
-  findAll(@Query('page') page: number = 1, @Query('limit') limit: number = 10) {
-    return this.clientService.findAll(page, limit);
+  findAll(@Query('page') page: number = 1, @Query('limit') limit: number = 10, @Query('search') search: string = '', @Query('status') status: MembershipStatus | null = null) {
+    return this.clientService.findAll(page, limit, search, status);
   }
 
   @Patch('active/:id')

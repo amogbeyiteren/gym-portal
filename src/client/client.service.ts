@@ -96,18 +96,39 @@ export class ClientService {
     );
   }
 
-  async findAll(page: number = 1, limit: number = 10) {
+  async findAll(page: number = 1, limit: number = 10, search: string = '', membershipStatus: MembershipStatus | null = null) {
     // Ensure page and limit are at least 1
     const currentPage = Math.max(page, 1);
     const pageSize = Math.max(limit, 1);
 
     // Count total clients for pagination metadata
-    const totalClients = await this.databaseService.client.count();
+    const totalClients = await this.databaseService.client.count({
+      where: {
+        ...(search && {
+          OR: [
+            { firstName: { contains: search, mode: 'insensitive' } },
+            { lastName: { contains: search, mode: 'insensitive' } },
+            { email: { contains: search, mode: 'insensitive' } },
+          ],
+        }),
+        ...(membershipStatus && { membershipStatus: membershipStatus }),
+      },
+    });
 
     // Fetch paginated data
     const clients = await this.databaseService.client.findMany({
       skip: (currentPage - 1) * pageSize,
       take: pageSize,
+      where: {
+        ...(search && {
+          OR: [
+            { firstName: { contains: search, mode: 'insensitive' } },
+            { lastName: { contains: search, mode: 'insensitive' } },
+            { email: { contains: search, mode: 'insensitive' } },
+          ],
+        }),
+        ...(membershipStatus && { membershipStatus: membershipStatus }),
+      },
       select: {
         id: true,
         email: true,
