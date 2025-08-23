@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsOptional, IsUrl } from 'class-validator';
+import { IsString, IsOptional, IsUrl, IsNumber } from 'class-validator';
 
 
 export class UpdateClientDto {
@@ -32,5 +32,6 @@ export class UpdateClientMembershipAsActiveDto {
   membershipDueDate: string;
 
   @ApiProperty({ required: true, description: 'Amount paid for membership' })
+  @IsNumber()
   amount: number;
 }
