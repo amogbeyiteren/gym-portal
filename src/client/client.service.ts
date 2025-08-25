@@ -217,7 +217,7 @@ export class ClientService {
     const updatedClient = await this.databaseService.client.update({
       where: { id: clientId },
       data: {
-        membershipStatus: MembershipStatus.ACTIVE,
+        membershipStatus: MembershipStatus.INACTIVE,
       },
       select: {
         id: true,

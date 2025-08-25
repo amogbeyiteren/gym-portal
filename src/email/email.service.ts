@@ -215,7 +215,7 @@ export class EmailService {
 
       You requested a password reset. Please click the link below to reset your password:
 
-      ${process.env.FRONTEND_URL}/reset-password?token=${token}
+      ${process.env.FRONTEND_URL}/auth/reset-password?token=${token}
 
       If you did not request a password reset, please ignore this email.
     `;
