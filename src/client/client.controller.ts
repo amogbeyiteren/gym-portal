@@ -230,7 +230,7 @@ export class ClientController {
   @ApiOperation({ summary: 'Send forgot password email' })
   @ApiResponse({ status: 200, description: 'Forgot password email sent' })
   @ApiResponse({ status: 404, description: 'Client not found' })
-  forgotPassword(@Body() email: string) {
+  forgotPassword(@Body('email') email: string) {
     return this.clientService.forgotPassword(email);
   }
 
@@ -238,7 +238,7 @@ export class ClientController {
   @ApiOperation({ summary: 'Reset password' })
   @ApiResponse({ status: 200, description: 'Password reset successfully' })
   @ApiResponse({ status: 404, description: 'Client not found' })
-  resetPassword(@Body() token: string, @Body() password: string) {
+  resetPassword(@Body('token') token: string, @Body('password') password: string) {
     return this.clientService.resetPassword(token, password);
   }
 }
