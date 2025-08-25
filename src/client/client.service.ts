@@ -453,4 +453,20 @@ export class ClientService {
       throw new Error('Failed to generate QR code');
     }
   }
+
+  async expireClients() {
+    const clients = await this.databaseService.client.updateMany({
+      where: {
+        membershipStatus: MembershipStatus.ACTIVE,
+        membershipDueDate: {
+          lte: new Date(),
+        },
+      },
+      data: {
+        membershipStatus: MembershipStatus.INACTIVE,
+      },
+    });
+
+    return { message: clients.count + ' Clients expired successfully' };
+  }
 }

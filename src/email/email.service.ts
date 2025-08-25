@@ -228,7 +228,7 @@ export class EmailService {
         text: emailContent,
       });
 
-      console.log('Forgot password email sent:', data.data.id);
+      console.log('Forgot password email sent');
       return data;
     } catch (error) {
       console.error('Error sending forgot password email:', error);

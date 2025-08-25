@@ -241,4 +241,11 @@ export class ClientController {
   resetPassword(@Body('token') token: string, @Body('password') password: string) {
     return this.clientService.resetPassword(token, password);
   }
+
+  @Post('expire-clients')
+  @ApiOperation({ summary: 'Expire clients' })
+  @ApiResponse({ status: 200, description: 'Clients expired successfully' })
+  expireClients() {
+    return this.clientService.expireClients();
+  }
 }
