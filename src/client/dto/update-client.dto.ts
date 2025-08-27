@@ -34,4 +34,9 @@ export class UpdateClientMembershipAsActiveDto {
   @ApiProperty({ required: true, description: 'Amount paid for membership' })
   @IsNumber()
   amount: number;
+
+  @ApiProperty({ required: true, description: 'Membership plan' })
+  @IsString()
+  membershipPlan: string;
+  
 }

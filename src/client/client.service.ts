@@ -140,6 +140,7 @@ export class ClientService {
         membershipPaidDate: true,
         membershipDueDate: true,
         membershipLastPaidAmount: true,
+        membershipPlan: true,
         createdAt: true,
         updatedAt: true,
         _count: {
@@ -168,7 +169,7 @@ export class ClientService {
     clientId: string,
     updateClientMembershipAsActive: UpdateClientMembershipAsActiveDto,
   ) {
-    const { membershipDueDate, membershipPaidDate, amount } =
+    const { membershipDueDate, membershipPaidDate, amount, membershipPlan } =
       updateClientMembershipAsActive;
 
     const existingClient = await this.databaseService.client.findUnique({
@@ -186,6 +187,7 @@ export class ClientService {
         membershipDueDate,
         membershipPaidDate,
         membershipLastPaidAmount: amount,
+        membershipPlan,
       },
       select: {
         id: true,
@@ -195,6 +197,7 @@ export class ClientService {
         profileImage: true,
         qrCodeUrl: true,
         membershipStatus: true,
+        membershipPlan: true,
         membershipPaidDate: true,
         membershipDueDate: true,
         createdAt: true,

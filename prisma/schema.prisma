@@ -57,6 +57,7 @@ model Client {
   membershipStatus     MembershipStatus @default(INACTIVE)
   membershipPaidDate   DateTime?    
   membershipDueDate    DateTime?
+  membershipPlan       String       @default("Individual Plan")
   membershipLastPaidAmount Int      @default(0)
   membershipPaymentRef String?          @unique
   createdAt            DateTime         @default(now())
