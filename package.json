@@ -95,8 +95,8 @@
     "testEnvironment": "node"
   },
   "engines": {
-    "node": "22.19.0",
-    "npm": "11.5.2"
+    "node": "22.15.1",
+    "npm": "10.9.2"
   }
 
 }
